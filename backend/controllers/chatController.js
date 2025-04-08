@@ -69,3 +69,31 @@ exports.processAIRequest = async (req, res) => {
     res.status(500).json({ error: "Failed to process AI request" });
   }
 };
+
+exports.getLatestResponse = async (req, res) => {
+  try {
+    const token = req.cookies.token;
+    if (!token) {
+      return res
+        .status(401)
+        .json({ error: "Unauthorized. No token provided." });
+    }
+
+    const { userId } = verifyToken(token);
+    if (!userId) {
+      return res.status(401).json({ error: "Invalid token." });
+    }
+
+    const latestChat = await Chat.findOne({ userId }).sort({ createdAt: -1 });
+    if (!latestChat) {
+      return res.status(404).json({ error: "No chat history found" });
+    }
+
+    res.json({
+      response: latestChat.response,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to fetch latest response" });
+  }
+};
