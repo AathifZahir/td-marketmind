@@ -1,5 +1,6 @@
 const { generateToken } = require("../utils/jwt");
 
+// Backend: Generate user ID and set cookie
 exports.generateUserId = (req, res) => {
   const userId = `user-${Date.now()}`;
   const token = generateToken(userId);
