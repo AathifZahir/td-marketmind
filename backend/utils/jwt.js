@@ -1,3 +1,4 @@
+// Backend: JWT utility functions
 const jwt = require("jsonwebtoken");
 
 const generateToken = (userId) => {

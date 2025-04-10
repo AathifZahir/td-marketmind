@@ -1,0 +1,786 @@
+
+/* File: ./backend\app.js */
+require("dotenv").config();
+const express = require("express");
+const cookieParser = require("cookie-parser");
+const mongoose = require("mongoose");
+const connectDB = require("./config/db");
+const authRoutes = require("./routes/authRoutes");
+const chatRoutes = require("./routes/chatRoutes");
+const cors = require("cors");
+
+const app = express();
+
+// Connect to MongoDB
+connectDB();
+
+// CORS Configuration
+const corsOptions = {
+  origin: "http://localhost:3001", // Your frontend origin
+  credentials: true, // Allow cookies to be sent
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+// Middleware
+app.use(cors(corsOptions));
+app.use(express.json());
+app.use(cookieParser());
+
+// Routes
+app.use("/api/auth", authRoutes);
+app.use("/api/chat", chatRoutes);
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: "Something went wrong!" });
+});
+
+// Start server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
+module.exports = app;
+
+
+/* File: ./backend\config\db.js */
+const mongoose = require("mongoose");
+
+const connectDB = async () => {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI);
+    console.log("MongoDB connected successfully");
+  } catch (error) {
+    console.error("MongoDB connection error:", error);
+    process.exit(1);
+  }
+};
+
+module.exports = connectDB;
+
+
+/* File: ./backend\controllers\authController.js */
+const { generateToken } = require("../utils/jwt");
+
+// Backend: Generate user ID and set cookie
+exports.generateUserId = (req, res) => {
+  const userId = `user-${Date.now()}`;
+  const token = generateToken(userId);
+
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 3600000, // 1 hour
+  });
+
+  res.json({ userId });
+};
+
+
+/* File: ./backend\controllers\chatController.js */
+const axios = require("axios");
+const Chat = require("../models/Chat");
+const { verifyToken } = require("../utils/jwt");
+
+exports.processAIRequest = async (req, res) => {
+  try {
+    const { query } = req.body;
+    const token = req.cookies.token;
+
+    if (!query) {
+      return res.status(400).json({ error: "Query is required." });
+    }
+
+    if (!token) {
+      return res
+        .status(401)
+        .json({ error: "Unauthorized. No token provided." });
+    }
+
+    const { userId } = verifyToken(token);
+
+    if (!userId) {
+      return res.status(401).json({ error: "Invalid token." });
+    }
+
+    const key = process.env.GEMINI_API_KEY;
+
+    const response = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro-exp-03-25:generateContent?key=${key}`,
+      {
+        contents: [
+          {
+            role: "user",
+            parts: [
+              {
+                text: query,
+              },
+            ],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.7,
+          topK: 64,
+          topP: 0.95,
+          maxOutputTokens: 65536,
+          responseMimeType: "text/plain",
+        },
+      }
+    );
+
+    const aiResponse = response.data.candidates[0].content.parts[0].text;
+
+    // Save chat to database
+    await Chat.create({
+      userId,
+      query,
+      response: aiResponse,
+    });
+
+    res.json({
+      userId,
+      response: aiResponse,
+    });
+  } catch (error) {
+    console.error(error);
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).json({ error: "Invalid token." });
+    }
+    res.status(500).json({ error: "Failed to process AI request" });
+  }
+};
+
+exports.getLatestResponse = async (req, res) => {
+  try {
+    const token = req.cookies.token;
+    if (!token) {
+      return res
+        .status(401)
+        .json({ error: "Unauthorized. No token provided." });
+    }
+
+    const { userId } = verifyToken(token);
+
+    console.log("Received token:", token);
+    console.log("Decoded payload:", jwt.verify(token, process.env.JWT_SECRET));
+
+    if (!userId) {
+      return res.status(401).json({ error: "Invalid token." });
+    }
+
+    const latestChat = await Chat.findOne({ userId }).sort({ createdAt: -1 });
+    if (!latestChat) {
+      return res.status(404).json({ error: "No chat history found" });
+    }
+
+    res.json({
+      response: latestChat.response,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to fetch latest response" });
+  }
+};
+
+// Add this new method to chatController.js
+exports.generateInitialRecommendations = async (req, res) => {
+  try {
+    const { businessName, industry, goal, challenges } = req.body;
+    const token = req.cookies.token;
+
+    if (!token) {
+      return res
+        .status(401)
+        .json({ error: "Unauthorized. No token provided." });
+    }
+
+    const { userId } = verifyToken(token);
+
+    if (!userId) {
+      return res.status(401).json({ error: "Invalid token." });
+    }
+
+    const prompt = `Create marketing strategies for ${businessName} in the ${industry} industry. 
+    Their primary goal is ${goal} and they're facing these challenges: ${challenges}. 
+    Provide 3 specific recommendations.`;
+
+    const key = process.env.GEMINI_API_KEY;
+    const response = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro-exp-03-25:generateContent?key=${key}`,
+      {
+        contents: [
+          {
+            role: "user",
+            parts: [
+              {
+                text: prompt,
+              },
+            ],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.7,
+          topK: 64,
+          topP: 0.95,
+          maxOutputTokens: 65536,
+          responseMimeType: "text/plain",
+        },
+      }
+    );
+
+    const aiResponse = response.data.candidates[0].content.parts[0].text;
+
+    // Save to database
+    await Chat.create({
+      userId,
+      query: prompt,
+      response: aiResponse,
+    });
+
+    res.json({
+      response: aiResponse,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to generate recommendations" });
+  }
+};
+
+
+/* File: ./backend\models\Chat.js */
+const mongoose = require("mongoose");
+
+const chatSchema = new mongoose.Schema({
+  userId: {
+    type: String,
+    required: true,
+  },
+  query: {
+    type: String,
+    required: true,
+  },
+  response: {
+    type: String,
+    required: true,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+module.exports = mongoose.model("Chat", chatSchema);
+
+
+/* File: ./backend\routes\authRoutes.js */
+const express = require("express");
+const router = express.Router();
+const authController = require("../controllers/authController");
+
+router.get("/generate-user-id", authController.generateUserId);
+
+module.exports = router;
+
+
+/* File: ./backend\routes\chatRoutes.js */
+const express = require("express");
+const router = express.Router();
+const chatController = require("../controllers/chatController");
+
+router.post("/ai-request", chatController.processAIRequest);
+router.get("/getLatestResponse", chatController.getLatestResponse);
+router.post(
+  "/generateInitialRecommendations",
+  chatController.generateInitialRecommendations
+);
+
+module.exports = router;
+
+
+/* File: ./backend\utils\jwt.js */
+// Backend: JWT utility functions
+const jwt = require("jsonwebtoken");
+
+const generateToken = (userId) => {
+  return jwt.sign({ userId }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRES_IN,
+  });
+};
+
+const verifyToken = (token) => {
+  return jwt.verify(token, process.env.JWT_SECRET);
+};
+
+module.exports = { generateToken, verifyToken };
+
+
+/* File: ./frontend\src\app\config.js */
+const DOMAIN = "http://localhost:3000";
+
+export { DOMAIN };
+
+
+/* File: ./frontend\src\app\layout.js */
+import { Inter } from "next/font/google"; // Only import Inter if you're using it
+import "./globals.css";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter", // Define a variable for font usage in CSS
+});
+
+export const metadata = {
+  title: "Create Next App",
+  description: "Generated by create next app",
+};
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="en">
+      <body className={`${inter.variable} antialiased bg-gray-50 min-h-screen`}>
+        {children}
+      </body>
+    </html>
+  );
+}
+
+
+/* File: ./frontend\src\app\page.js */
+"use client";
+import React, { useState } from "react";
+import Link from "next/link";
+import Navbar from "./components/navbar";
+import { useRouter } from "next/navigation";
+import { DOMAIN } from "./config";
+
+export default function Onboarding() {
+  const router = useRouter();
+  const [formData, setFormData] = useState({
+    businessName: "",
+    industry: "",
+    goal: "",
+    challenges: "",
+  });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      // Step 1: Generate user ID (with credentials)
+      const userIdRes = await fetch(
+        "http://localhost:3000/api/auth/generate-user-id",
+        {
+          credentials: "include", // This is crucial
+        }
+      );
+
+      if (!userIdRes.ok) throw new Error("Failed to generate user ID");
+      const { userId } = await userIdRes.json();
+
+      // Step 2: Send onboarding data to AI (with credentials)
+      const prompt = `Create marketing strategies for ${formData.businessName} in the ${formData.industry} industry. 
+      Their primary goal is ${formData.goal} and they're facing these challenges: ${formData.challenges}. 
+      Provide 3 specific recommendations.`;
+
+      const aiRes = await fetch("http://localhost:3000/api/chat/ai-request", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // This is crucial
+        body: JSON.stringify({ query: prompt }),
+      });
+
+      if (!aiRes.ok) throw new Error("Failed to get AI response");
+      const aiData = await aiRes.json();
+
+      // Redirect to dashboard
+      router.push("/dashboard");
+    } catch (error) {
+      console.error("Onboarding error:", error);
+      alert("An error occurred during onboarding. Please try again.");
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      <div className="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md mt-10">
+        <h1 className="text-2xl font-bold text-gray-800 mb-2">
+          Welcome to MarketMind AI
+        </h1>
+        <p className="text-gray-600 mb-6">
+          Let's personalize your marketing assistant
+        </p>
+
+        <form className="space-y-6" onSubmit={handleSubmit}>
+          <div>
+            <h2 className="text-lg font-semibold text-gray-700 mb-1">
+              What's your business name?
+            </h2>
+            <input
+              type="text"
+              name="businessName"
+              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="E.g. Acme Corp"
+              value={formData.businessName}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          <div>
+            <h2 className="text-lg font-semibold text-gray-700 mb-1">
+              What industry are you in?
+            </h2>
+            <select
+              name="industry"
+              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={formData.industry}
+              onChange={handleChange}
+              required
+            >
+              <option value="">Select your industry</option>
+              <option value="ecommerce">E-commerce</option>
+              <option value="saas">SaaS</option>
+              <option value="retail">Retail</option>
+              <option value="agency">Marketing Agency</option>
+              <option value="healthcare">Healthcare</option>
+              <option value="finance">Finance</option>
+              <option value="education">Education</option>
+            </select>
+          </div>
+
+          <div>
+            <h2 className="text-lg font-semibold text-gray-700 mb-1">
+              Your primary marketing goal?
+            </h2>
+            <select
+              name="goal"
+              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={formData.goal}
+              onChange={handleChange}
+              required
+            >
+              <option value="">Select a goal</option>
+              <option value="leads">Generate more leads</option>
+              <option value="brand">Build brand awareness</option>
+              <option value="conversion">Improve conversion rates</option>
+              <option value="engagement">Increase engagement</option>
+              <option value="retention">Improve customer retention</option>
+              <option value="sales">Boost direct sales</option>
+            </select>
+          </div>
+
+          <div>
+            <h2 className="text-lg font-semibold text-gray-700 mb-1">
+              Current marketing challenges?
+            </h2>
+            <textarea
+              name="challenges"
+              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]"
+              placeholder="E.g. Low social media engagement, poor ad performance..."
+              value={formData.challenges}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-md transition-colors"
+          >
+            Get Personalized Recommendations
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+
+/* File: ./frontend\src\app\components\navbar.js */
+"use client";
+import React, { useState } from "react";
+import Link from "next/link";
+
+export default function Navbar({ active }) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  return (
+    <header className="bg-white shadow-sm">
+      <div className="max-w-6xl mx-auto px-4">
+        <div className="flex justify-between items-center py-4">
+          {/* Logo */}
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-blue-600 rounded-full"></div>
+            <Link href="/dashboard" className="font-bold text-lg">
+              MarketMind AI
+            </Link>
+          </div>
+
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex space-x-8">
+            <Link
+              href="/dashboard"
+              className={`${
+                active === "dashboard"
+                  ? "text-blue-600 font-medium"
+                  : "text-gray-600"
+              } hover:text-blue-600`}
+            >
+              Dashboard
+            </Link>
+            <Link
+              href="#"
+              className={`${
+                active === "campaigns"
+                  ? "text-blue-600 font-medium"
+                  : "text-gray-600"
+              } hover:text-blue-600`}
+            >
+              Campaigns
+            </Link>
+            <Link
+              href="#"
+              className={`${
+                active === "analytics"
+                  ? "text-blue-600 font-medium"
+                  : "text-gray-600"
+              } hover:text-blue-600`}
+            >
+              Analytics
+            </Link>
+            <Link
+              href="#"
+              className={`${
+                active === "settings"
+                  ? "text-blue-600 font-medium"
+                  : "text-gray-600"
+              } hover:text-blue-600`}
+            >
+              Settings
+            </Link>
+          </nav>
+
+          {/* Mobile menu button */}
+          <div className="md:hidden">
+            <button
+              type="button"
+              className="text-gray-500 hover:text-gray-600"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              <svg
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                {mobileMenuOpen ? (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                ) : (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                )}
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden">
+          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+            <Link
+              href="/dashboard"
+              className={`${
+                active === "dashboard"
+                  ? "bg-blue-50 text-blue-600"
+                  : "text-gray-600"
+              } block px-3 py-2 rounded-md text-base font-medium`}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Dashboard
+            </Link>
+            <Link
+              href="#"
+              className={`${
+                active === "campaigns"
+                  ? "bg-blue-50 text-blue-600"
+                  : "text-gray-600"
+              } block px-3 py-2 rounded-md text-base font-medium`}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Campaigns
+            </Link>
+            <Link
+              href="#"
+              className={`${
+                active === "analytics"
+                  ? "bg-blue-50 text-blue-600"
+                  : "text-gray-600"
+              } block px-3 py-2 rounded-md text-base font-medium`}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Analytics
+            </Link>
+            <Link
+              href="#"
+              className={`${
+                active === "settings"
+                  ? "bg-blue-50 text-blue-600"
+                  : "text-gray-600"
+              } block px-3 py-2 rounded-md text-base font-medium`}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Settings
+            </Link>
+          </div>
+        </div>
+      )}
+    </header>
+  );
+}
+
+
+/* File: ./frontend\src\app\dashboard\page.js */
+"use client";
+import React, { useState, useEffect } from "react";
+import Navbar from "../components/navbar";
+import { DOMAIN } from "../config";
+
+export default function Dashboard() {
+  const [message, setMessage] = useState("");
+  const [messages, setMessages] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Fetch initial AI response when component mounts
+  useEffect(() => {
+    const fetchInitialResponse = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch(`${DOMAIN}/api/chat/getLatestResponse`);
+        const data = await response.json();
+
+        if (data.response) {
+          setMessages((prev) => [
+            ...prev,
+            { text: data.response, isUser: false },
+          ]);
+        }
+      } catch (error) {
+        console.error("Failed to fetch initial response:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchInitialResponse();
+  }, []);
+
+  const handleSendMessage = async () => {
+    if (!message.trim()) return;
+
+    try {
+      setIsLoading(true);
+      // Add user message to chat
+      setMessages((prev) => [...prev, { text: message, isUser: true }]);
+
+      // Send to AI
+      const response = await fetch(`${DOMAIN}/api/chat/ai-request`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ query: message }),
+      });
+
+      const data = await response.json();
+
+      if (data.response) {
+        setMessages((prev) => [
+          ...prev,
+          { text: data.response, isUser: false },
+        ]);
+      }
+
+      setMessage("");
+    } catch (error) {
+      console.error("Failed to send message:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Navbar active="dashboard" />
+      <div className="max-w-4xl mx-auto pt-8 px-4">
+        <h1 className="text-2xl font-bold text-gray-800 mb-6">Dashboard</h1>
+
+        <div className="bg-white p-6 rounded-lg shadow-sm mb-6 space-y-4">
+          {messages.length === 0 && isLoading ? (
+            <div className="text-center py-8">Loading recommendations...</div>
+          ) : (
+            messages.map((msg, index) => (
+              <div
+                key={index}
+                className={`flex ${
+                  msg.isUser ? "justify-end" : "justify-start"
+                }`}
+              >
+                <div
+                  className={`max-w-3xl p-4 rounded-lg ${
+                    msg.isUser
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-100 text-gray-800"
+                  }`}
+                >
+                  {msg.text}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="mt-6 flex space-x-4">
+          <input
+            type="text"
+            className="flex-1 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Type your marketing question..."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+            disabled={isLoading}
+          />
+          <button
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md transition-colors disabled:opacity-50"
+            onClick={handleSendMessage}
+            disabled={isLoading || !message.trim()}
+          >
+            {isLoading ? "Sending..." : "Send"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
