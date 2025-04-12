@@ -29,10 +29,37 @@ app.use(cookieParser());
 app.use("/api/auth", authRoutes);
 app.use("/api/chat", chatRoutes);
 
-// Error handling middleware
+// Enhanced error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ error: "Something went wrong!" });
+
+  // Handle different types of errors
+  if (err.name === "ValidationError") {
+    return res.status(400).json({
+      error: "Validation Error",
+      details: err.message,
+    });
+  }
+
+  if (err.name === "JsonWebTokenError") {
+    return res.status(401).json({
+      error: "Authentication Error",
+      details: "Invalid token",
+    });
+  }
+
+  if (err.name === "TokenExpiredError") {
+    return res.status(401).json({
+      error: "Authentication Error",
+      details: "Token expired",
+    });
+  }
+
+  // Default error response
+  res.status(err.statusCode || 500).json({
+    error: err.message || "Something went wrong!",
+    requestId: req.id, // Add request ID for tracking
+  });
 });
 
 // Start server
