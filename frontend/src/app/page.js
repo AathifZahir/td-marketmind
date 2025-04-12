@@ -4,6 +4,9 @@ import Link from "next/link";
 import Navbar from "./components/navbar";
 import { useRouter } from "next/navigation";
 import { DOMAIN } from "./config";
+import toast from "react-hot-toast";
+import LoadingDots from "./components/LoadingDots";
+import { motion } from "framer-motion";
 
 export default function Onboarding() {
   const router = useRouter();
@@ -13,56 +16,104 @@ export default function Onboarding() {
     goal: "",
     challenges: "",
   });
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.businessName.trim()) {
+      newErrors.businessName = "Business name is required";
+    }
+
+    if (!formData.industry) {
+      newErrors.industry = "Please select an industry";
+    }
+
+    if (!formData.goal) {
+      newErrors.goal = "Please select a goal";
+    }
+
+    if (!formData.challenges.trim()) {
+      newErrors.challenges = "Please describe your challenges";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    // Clear error when field is edited
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: null }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!validateForm()) {
+      toast.error("Please fix the form errors");
+      return;
+    }
+
+    setIsSubmitting(true);
+
     try {
-      // Step 1: Generate user ID (with credentials)
-      const userIdRes = await fetch(
-        "http://localhost:3000/api/auth/generate-user-id",
+      // Show loading toast
+      const loadingToast = toast.loading("Setting up your account...");
+
+      // Generate user ID
+      const userIdRes = await fetch(`${DOMAIN}/api/auth/generate-user-id`, {
+        credentials: "include",
+      });
+
+      if (!userIdRes.ok) {
+        const error = await userIdRes.json();
+        throw new Error(error.details || "Failed to generate user ID");
+      }
+
+      // Send onboarding data
+      const aiRes = await fetch(
+        `${DOMAIN}/api/chat/generateInitialRecommendations`,
         {
-          credentials: "include", // This is crucial
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(formData),
         }
       );
 
-      if (!userIdRes.ok) throw new Error("Failed to generate user ID");
-      const { userId } = await userIdRes.json();
+      if (!aiRes.ok) {
+        const error = await aiRes.json();
+        throw new Error(error.details || "Failed to get AI response");
+      }
 
-      // Step 2: Send onboarding data to AI (with credentials)
-      const prompt = `Create marketing strategies for ${formData.businessName} in the ${formData.industry} industry. 
-      Their primary goal is ${formData.goal} and they're facing these challenges: ${formData.challenges}. 
-      Provide 3 specific recommendations.`;
-
-      const aiRes = await fetch("http://localhost:3000/api/chat/ai-request", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include", // This is crucial
-        body: JSON.stringify({ query: prompt }),
-      });
-
-      if (!aiRes.ok) throw new Error("Failed to get AI response");
-      const aiData = await aiRes.json();
+      // Dismiss loading toast and show success
+      toast.dismiss(loadingToast);
+      toast.success("Account setup complete!");
 
       // Redirect to dashboard
       router.push("/dashboard");
     } catch (error) {
       console.error("Onboarding error:", error);
-      alert("An error occurred during onboarding. Please try again.");
+      toast.error(error.message || "An error occurred during onboarding");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      <div className="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md mt-10">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md mt-10"
+      >
         <h1 className="text-2xl font-bold text-gray-800 mb-2">
           Welcome to MarketMind AI
         </h1>
@@ -78,12 +129,22 @@ export default function Onboarding() {
             <input
               type="text"
               name="businessName"
-              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={`w-full p-3 border ${
+                errors.businessName ? "border-red-500" : "border-gray-300"
+              } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200`}
               placeholder="E.g. Acme Corp"
               value={formData.businessName}
               onChange={handleChange}
-              required
             />
+            {errors.businessName && (
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-red-500 text-sm mt-1"
+              >
+                {errors.businessName}
+              </motion.p>
+            )}
           </div>
 
           <div>
@@ -92,10 +153,11 @@ export default function Onboarding() {
             </h2>
             <select
               name="industry"
-              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={`w-full p-3 border ${
+                errors.industry ? "border-red-500" : "border-gray-300"
+              } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200`}
               value={formData.industry}
               onChange={handleChange}
-              required
             >
               <option value="">Select your industry</option>
               <option value="ecommerce">E-commerce</option>
@@ -106,6 +168,15 @@ export default function Onboarding() {
               <option value="finance">Finance</option>
               <option value="education">Education</option>
             </select>
+            {errors.industry && (
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-red-500 text-sm mt-1"
+              >
+                {errors.industry}
+              </motion.p>
+            )}
           </div>
 
           <div>
@@ -114,10 +185,11 @@ export default function Onboarding() {
             </h2>
             <select
               name="goal"
-              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={`w-full p-3 border ${
+                errors.goal ? "border-red-500" : "border-gray-300"
+              } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200`}
               value={formData.goal}
               onChange={handleChange}
-              required
             >
               <option value="">Select a goal</option>
               <option value="leads">Generate more leads</option>
@@ -127,6 +199,15 @@ export default function Onboarding() {
               <option value="retention">Improve customer retention</option>
               <option value="sales">Boost direct sales</option>
             </select>
+            {errors.goal && (
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-red-500 text-sm mt-1"
+              >
+                {errors.goal}
+              </motion.p>
+            )}
           </div>
 
           <div>
@@ -135,22 +216,42 @@ export default function Onboarding() {
             </h2>
             <textarea
               name="challenges"
-              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]"
+              className={`w-full p-3 border ${
+                errors.challenges ? "border-red-500" : "border-gray-300"
+              } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px] transition-all duration-200`}
               placeholder="E.g. Low social media engagement, poor ad performance..."
               value={formData.challenges}
               onChange={handleChange}
-              required
             />
+            {errors.challenges && (
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-red-500 text-sm mt-1"
+              >
+                {errors.challenges}
+              </motion.p>
+            )}
           </div>
 
-          <button
+          <motion.button
             type="submit"
-            className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-md transition-colors"
+            disabled={isSubmitting}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-md transition-colors disabled:opacity-50 flex justify-center items-center"
           >
-            Get Personalized Recommendations
-          </button>
+            {isSubmitting ? (
+              <>
+                <LoadingDots />
+                <span className="ml-2">Processing...</span>
+              </>
+            ) : (
+              "Get Personalized Recommendations"
+            )}
+          </motion.button>
         </form>
-      </div>
+      </motion.div>
     </div>
   );
 }

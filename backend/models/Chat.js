@@ -1,18 +1,22 @@
+/* File: ./backend\models\Chat.js */
 const mongoose = require("mongoose");
 
 const chatSchema = new mongoose.Schema({
   userId: {
     type: String,
     required: true,
+    index: true, // Add index for better query performance
   },
-  query: {
-    type: String,
-    required: true,
-  },
-  response: {
-    type: String,
-    required: true,
-  },
+  messages: [
+    {
+      text: String,
+      isUser: Boolean,
+      timestamp: {
+        type: Date,
+        default: Date.now,
+      },
+    },
+  ],
   createdAt: {
     type: Date,
     default: Date.now,
