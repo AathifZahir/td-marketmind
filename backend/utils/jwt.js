@@ -8,7 +8,12 @@ const generateToken = (userId) => {
 };
 
 const verifyToken = (token) => {
-  return jwt.verify(token, process.env.JWT_SECRET);
+  try {
+    return jwt.verify(token, process.env.JWT_SECRET);
+  } catch (error) {
+    console.error("Token verification failed:", error.message);
+    throw error;
+  }
 };
 
 module.exports = { generateToken, verifyToken };
