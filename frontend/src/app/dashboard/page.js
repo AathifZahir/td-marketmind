@@ -9,6 +9,7 @@ import LoadingDots from "../components/LoadingDots";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../hooks/useAuth";
 
+// This is the AI chat
 export default function Dashboard() {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
