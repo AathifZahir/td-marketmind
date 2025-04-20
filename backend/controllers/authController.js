@@ -1,7 +1,6 @@
-const { generateToken } = require("../utils/jwt");
-const { verifyToken } = require("../utils/jwt");
+const { generateToken, verifyToken } = require("../utils/jwt");
 
-// Backend:Generate user ID and set cookie
+// Backend: Generate user ID and set cookie
 exports.generateUserId = (req, res) => {
   const userId = `user-${Date.now()}`;
   const token = generateToken(userId);
@@ -9,13 +8,14 @@ exports.generateUserId = (req, res) => {
   res.cookie("token", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    maxAge: 3600000, // 1 hour
+    maxAge: 15552000000, // 6 months in milliseconds
+    sameSite: "strict", // Enhance security
   });
 
   res.json({ userId });
 };
 
-// New method to check authentication status
+// Check authentication status
 exports.checkAuthStatus = (req, res) => {
   try {
     const token = req.cookies.token;
@@ -39,6 +39,44 @@ exports.checkAuthStatus = (req, res) => {
     }
   } catch (error) {
     console.error("Auth status check error:", error);
+    res.status(401).json({ authenticated: false });
+  }
+};
+
+// New refresh token method
+exports.refreshToken = (req, res) => {
+  try {
+    const token = req.cookies.token;
+
+    if (!token) {
+      return res.status(401).json({ authenticated: false });
+    }
+
+    try {
+      // Verify the existing token
+      const { userId } = verifyToken(token);
+
+      // Generate a new token with a fresh expiration
+      const newToken = generateToken(userId);
+
+      // Set the new token in a cookie
+      res.cookie("token", newToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 15552000000, // 6 months in milliseconds
+        sameSite: "strict",
+      });
+
+      res.json({
+        authenticated: true,
+        userId,
+      });
+    } catch (err) {
+      console.error("Token refresh failed:", err.message);
+      res.status(401).json({ authenticated: false });
+    }
+  } catch (error) {
+    console.error("Auth refresh error:", error);
     res.status(401).json({ authenticated: false });
   }
 };

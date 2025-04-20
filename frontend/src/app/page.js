@@ -1,271 +1,197 @@
 "use client";
-import React, { useState } from "react";
-import Link from "next/link";
+import React from "react";
 import Navbar from "./components/navbar";
-import { useRouter } from "next/navigation";
-import { DOMAIN } from "./config";
-import toast from "react-hot-toast";
-import LoadingDots from "./components/LoadingDots";
 import { motion } from "framer-motion";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
-export default function Onboarding() {
+export default function HomePage() {
   const router = useRouter();
-  const [formData, setFormData] = useState({
-    businessName: "",
-    industry: "",
-    goal: "",
-    challenges: "",
-  });
-  const [errors, setErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.businessName.trim()) {
-      newErrors.businessName = "Business name is required";
-    }
-
-    if (!formData.industry) {
-      newErrors.industry = "Please select an industry";
-    }
-
-    if (!formData.goal) {
-      newErrors.goal = "Please select a goal";
-    }
-
-    if (!formData.challenges.trim()) {
-      newErrors.challenges = "Please describe your challenges";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear error when field is edited
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: null }));
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
-      toast.error("Please fix the form errors");
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      // Show loading toast
-      const loadingToast = toast.loading("Setting up your account...");
-
-      // Generate user ID
-      const userIdRes = await fetch(`${DOMAIN}/api/auth/generate-user-id`, {
-        credentials: "include",
-      });
-
-      if (!userIdRes.ok) {
-        const error = await userIdRes.json();
-        throw new Error(error.details || "Failed to generate user ID");
-      }
-
-      // Send onboarding data
-      const aiRes = await fetch(
-        `${DOMAIN}/api/chat/generateInitialRecommendations`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(formData),
-        }
-      );
-
-      if (!aiRes.ok) {
-        const error = await aiRes.json();
-        throw new Error(error.details || "Failed to get AI response");
-      }
-
-      // Dismiss loading toast and show success
-      toast.dismiss(loadingToast);
-      toast.success("Account setup complete!");
-
-      // Redirect to dashboard
-      router.push("/dashboard");
-    } catch (error) {
-      console.error("Onboarding error:", error);
-      toast.error(error.message || "An error occurred during onboarding");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      <div className="max-w-xl mx-auto px-6 py-12">
+      <div className="max-w-6xl mx-auto px-6 py-16 md:py-24">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-6">
+              Transform Your Marketing with{" "}
+              <span className="text-indigo-600">AI</span>
+            </h1>
+            <p className="text-lg text-gray-600 mb-8">
+              MarketMind AI helps you create data-driven marketing strategies,
+              optimize campaigns, and increase your ROI with the power of
+              artificial intelligence.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => router.push("/onboarding")}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200"
+              >
+                Get Started
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => router.push("/chat")}
+                className="bg-white hover:bg-gray-100 text-indigo-600 border border-indigo-200 font-medium py-3 px-6 rounded-lg transition-all duration-200"
+              >
+                Try Demo
+              </motion.button>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="bg-white p-6 rounded-xl shadow-lg border border-gray-100"
+          >
+            <div className="aspect-video bg-indigo-50 rounded-lg flex items-center justify-center mb-6">
+              <svg
+                className="w-24 h-24 text-indigo-300"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="1.5"
+                  d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                ></path>
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-800 mb-3">
+              Key Features
+            </h3>
+            <ul className="space-y-3 text-gray-600">
+              <li className="flex items-start">
+                <svg
+                  className="w-5 h-5 text-indigo-500 mr-2 mt-0.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M5 13l4 4L19 7"
+                  ></path>
+                </svg>
+                <span>AI-powered marketing strategy recommendations</span>
+              </li>
+              <li className="flex items-start">
+                <svg
+                  className="w-5 h-5 text-indigo-500 mr-2 mt-0.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M5 13l4 4L19 7"
+                  ></path>
+                </svg>
+                <span>Personalized content creation assistance</span>
+              </li>
+              <li className="flex items-start">
+                <svg
+                  className="w-5 h-5 text-indigo-500 mr-2 mt-0.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M5 13l4 4L19 7"
+                  ></path>
+                </svg>
+                <span>Campaign optimization insights</span>
+              </li>
+              <li className="flex items-start">
+                <svg
+                  className="w-5 h-5 text-indigo-500 mr-2 mt-0.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M5 13l4 4L19 7"
+                  ></path>
+                </svg>
+                <span>24/7 marketing assistant</span>
+              </li>
+            </ul>
+          </motion.div>
+        </div>
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="bg-white p-8 rounded-xl shadow-sm border border-gray-100"
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="mt-24 text-center"
         >
-          <h1 className="text-2xl font-semibold text-gray-800 mb-2">
-            Welcome to MarketMind AI
-          </h1>
-          <p className="text-gray-600 mb-8">
-            Let's personalize your marketing assistant
-          </p>
-
-          <form className="space-y-7" onSubmit={handleSubmit}>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                What's your business name?
-              </label>
-              <input
-                type="text"
-                name="businessName"
-                className={`w-full p-3.5 bg-gray-50 border ${
-                  errors.businessName ? "border-red-300" : "border-gray-200"
-                } rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200`}
-                placeholder="E.g. Acme Corp"
-                value={formData.businessName}
-                onChange={handleChange}
-              />
-              {errors.businessName && (
-                <motion.p
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-red-500 text-sm mt-1.5"
-                >
-                  {errors.businessName}
-                </motion.p>
-              )}
+          <h2 className="text-3xl font-bold text-gray-800 mb-12">
+            How MarketMind AI Works
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+              <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-xl font-bold">1</span>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-3">
+                Complete Onboarding
+              </h3>
+              <p className="text-gray-600">
+                Tell us about your business, industry, and marketing goals so we
+                can personalize your experience.
+              </p>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                What industry are you in?
-              </label>
-              <select
-                name="industry"
-                className={`w-full p-3.5 bg-gray-50 border ${
-                  errors.industry ? "border-red-300" : "border-gray-200"
-                } rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 appearance-none`}
-                value={formData.industry}
-                onChange={handleChange}
-                style={{
-                  backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
-                  backgroundPosition: `right 0.5rem center`,
-                  backgroundRepeat: `no-repeat`,
-                  backgroundSize: `1.5em 1.5em`,
-                  paddingRight: `2.5rem`,
-                }}
-              >
-                <option value="">Select your industry</option>
-                <option value="ecommerce">E-commerce</option>
-                <option value="saas">SaaS</option>
-                <option value="retail">Retail</option>
-                <option value="agency">Marketing Agency</option>
-                <option value="healthcare">Healthcare</option>
-                <option value="finance">Finance</option>
-                <option value="education">Education</option>
-              </select>
-              {errors.industry && (
-                <motion.p
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-red-500 text-sm mt-1.5"
-                >
-                  {errors.industry}
-                </motion.p>
-              )}
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+              <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-xl font-bold">2</span>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-3">
+                Get AI Recommendations
+              </h3>
+              <p className="text-gray-600">
+                Receive tailored marketing strategies and actionable insights
+                based on your specific needs.
+              </p>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Your primary marketing goal?
-              </label>
-              <select
-                name="goal"
-                className={`w-full p-3.5 bg-gray-50 border ${
-                  errors.goal ? "border-red-300" : "border-gray-200"
-                } rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 appearance-none`}
-                value={formData.goal}
-                onChange={handleChange}
-                style={{
-                  backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
-                  backgroundPosition: `right 0.5rem center`,
-                  backgroundRepeat: `no-repeat`,
-                  backgroundSize: `1.5em 1.5em`,
-                  paddingRight: `2.5rem`,
-                }}
-              >
-                <option value="">Select a goal</option>
-                <option value="leads">Generate more leads</option>
-                <option value="brand">Build brand awareness</option>
-                <option value="conversion">Improve conversion rates</option>
-                <option value="engagement">Increase engagement</option>
-                <option value="retention">Improve customer retention</option>
-                <option value="sales">Boost direct sales</option>
-              </select>
-              {errors.goal && (
-                <motion.p
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-red-500 text-sm mt-1.5"
-                >
-                  {errors.goal}
-                </motion.p>
-              )}
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+              <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-xl font-bold">3</span>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-3">
+                Chat Anytime
+              </h3>
+              <p className="text-gray-600">
+                Ask questions, get advice, and refine your marketing strategy
+                with our AI assistant.
+              </p>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Current marketing challenges?
-              </label>
-              <textarea
-                name="challenges"
-                className={`w-full p-3.5 bg-gray-50 border ${
-                  errors.challenges ? "border-red-300" : "border-gray-200"
-                } rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent min-h-[120px] transition-all duration-200`}
-                placeholder="E.g. Low social media engagement, poor ad performance..."
-                value={formData.challenges}
-                onChange={handleChange}
-              />
-              {errors.challenges && (
-                <motion.p
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-red-500 text-sm mt-1.5"
-                >
-                  {errors.challenges}
-                </motion.p>
-              )}
-            </div>
-
-            <motion.button
-              type="submit"
-              disabled={isSubmitting}
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
-              className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3.5 px-4 rounded-lg transition-all duration-200 disabled:opacity-50 flex justify-center items-center"
-            >
-              {isSubmitting ? (
-                <>
-                  <LoadingDots />
-                  <span className="ml-2">Processing...</span>
-                </>
-              ) : (
-                "Get Personalized Recommendations"
-              )}
-            </motion.button>
-          </form>
+          </div>
         </motion.div>
       </div>
     </div>

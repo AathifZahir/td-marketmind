@@ -8,6 +8,28 @@ export function useAuth() {
     userId: null,
   });
 
+  const refreshToken = async () => {
+    try {
+      const res = await fetch(`${DOMAIN}/api/auth/refresh-token`, {
+        credentials: "include",
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setAuthState({
+          isAuthenticated: data.authenticated,
+          userId: data.userId,
+          isLoading: false,
+        });
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Token refresh failed:", error);
+      return false;
+    }
+  };
+
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -27,13 +49,15 @@ export function useAuth() {
             isLoading: false,
           });
         } else {
-          const errorData = await res.json();
-          console.error("Auth error:", errorData);
-          setAuthState({
-            isAuthenticated: false,
-            userId: null,
-            isLoading: false,
-          });
+          // Try to refresh the token if status check fails
+          const refreshed = await refreshToken();
+          if (!refreshed) {
+            setAuthState({
+              isAuthenticated: false,
+              userId: null,
+              isLoading: false,
+            });
+          }
         }
       } catch (error) {
         console.error("Auth check failed:", error);
@@ -46,6 +70,13 @@ export function useAuth() {
     };
 
     checkAuth();
+
+    // Set up periodic token refresh (every hour)
+    const refreshInterval = setInterval(() => {
+      refreshToken();
+    }, 3600000); // 1 hour in milliseconds
+
+    return () => clearInterval(refreshInterval);
   }, []);
 
   return authState;

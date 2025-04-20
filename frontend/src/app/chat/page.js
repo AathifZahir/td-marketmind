@@ -8,8 +8,9 @@ import toast from "react-hot-toast";
 import LoadingDots from "../components/LoadingDots";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../hooks/useAuth";
+import { withAuth } from "../components/ProtectedRoute";
 
-export default function Dashboard() {
+function ChatPage() {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -100,30 +101,7 @@ export default function Dashboard() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <LoadingDots />
-          <p className="mt-4 text-gray-600">Loading your dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated && !authLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center p-8 bg-white rounded-xl shadow-sm border border-gray-100 max-w-md">
-          <h2 className="text-2xl font-semibold text-red-600 mb-4">
-            Access Denied
-          </h2>
-          <p className="text-gray-600 mb-6">
-            You need to be logged in to access this page.
-          </p>
-          <motion.button
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => (window.location.href = "/")}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-5 rounded-lg transition-all duration-200"
-          >
-            Go to Login
-          </motion.button>
+          <p className="mt-4 text-gray-600">Loading your chat...</p>
         </div>
       </div>
     );
@@ -131,7 +109,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar active="dashboard" />
+      <Navbar />
       <div className="max-w-4xl mx-auto pt-10 px-6">
         <motion.h1
           initial={{ opacity: 0, y: -10 }}
@@ -140,7 +118,6 @@ export default function Dashboard() {
         >
           Marketing Assistant
         </motion.h1>
-
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -306,3 +283,7 @@ export default function Dashboard() {
     </div>
   );
 }
+
+export default withAuth(ChatPage, {
+  redirectUnauthenticatedTo: "/onboarding",
+});

@@ -1,9 +1,11 @@
-// Backend: JWT utility functions
 const jwt = require("jsonwebtoken");
+
+// 6 months in seconds: 6 * 30 * 24 * 60 * 60 = 15,552,000
+const SIX_MONTHS_IN_SECONDS = 15552000;
 
 const generateToken = (userId) => {
   return jwt.sign({ userId }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN,
+    expiresIn: SIX_MONTHS_IN_SECONDS,
   });
 };
 

@@ -461,8 +461,34 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} antialiased bg-gray-50 min-h-screen`}>
-        <Toaster position="top-right" />
+      <body
+        className={`${inter.variable} font-sans antialiased bg-gray-50 min-h-screen`}
+      >
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            style: {
+              background: "#FFFFFF",
+              color: "#1F2937",
+              boxShadow:
+                "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+              borderRadius: "0.5rem",
+              padding: "16px",
+            },
+            success: {
+              iconTheme: {
+                primary: "#4F46E5",
+                secondary: "#FFFFFF",
+              },
+            },
+            error: {
+              iconTheme: {
+                primary: "#EF4444",
+                secondary: "#FFFFFF",
+              },
+            },
+          }}
+        />
         {children}
       </body>
     </html>
@@ -472,440 +498,370 @@ export default function RootLayout({ children }) {
 
 /* File: ./frontend\src\app\page.js */
 "use client";
-import React, { useState } from "react";
-import Link from "next/link";
+import React from "react";
 import Navbar from "./components/navbar";
-import { useRouter } from "next/navigation";
-import { DOMAIN } from "./config";
-import toast from "react-hot-toast";
-import LoadingDots from "./components/LoadingDots";
 import { motion } from "framer-motion";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
-export default function Onboarding() {
+export default function HomePage() {
   const router = useRouter();
-  const [formData, setFormData] = useState({
-    businessName: "",
-    industry: "",
-    goal: "",
-    challenges: "",
-  });
-  const [errors, setErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.businessName.trim()) {
-      newErrors.businessName = "Business name is required";
-    }
-
-    if (!formData.industry) {
-      newErrors.industry = "Please select an industry";
-    }
-
-    if (!formData.goal) {
-      newErrors.goal = "Please select a goal";
-    }
-
-    if (!formData.challenges.trim()) {
-      newErrors.challenges = "Please describe your challenges";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear error when field is edited
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: null }));
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
-      toast.error("Please fix the form errors");
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      // Show loading toast
-      const loadingToast = toast.loading("Setting up your account...");
-
-      // Generate user ID
-      const userIdRes = await fetch(`${DOMAIN}/api/auth/generate-user-id`, {
-        credentials: "include",
-      });
-
-      if (!userIdRes.ok) {
-        const error = await userIdRes.json();
-        throw new Error(error.details || "Failed to generate user ID");
-      }
-
-      // Send onboarding data
-      const aiRes = await fetch(
-        `${DOMAIN}/api/chat/generateInitialRecommendations`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(formData),
-        }
-      );
-
-      if (!aiRes.ok) {
-        const error = await aiRes.json();
-        throw new Error(error.details || "Failed to get AI response");
-      }
-
-      // Dismiss loading toast and show success
-      toast.dismiss(loadingToast);
-      toast.success("Account setup complete!");
-
-      // Redirect to dashboard
-      router.push("/dashboard");
-    } catch (error) {
-      console.error("Onboarding error:", error);
-      toast.error(error.message || "An error occurred during onboarding");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md mt-10"
-      >
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">
-          Welcome to MarketMind AI
-        </h1>
-        <p className="text-gray-600 mb-6">
-          Let's personalize your marketing assistant
-        </p>
-
-        <form className="space-y-6" onSubmit={handleSubmit}>
-          <div>
-            <h2 className="text-lg font-semibold text-gray-700 mb-1">
-              What's your business name?
-            </h2>
-            <input
-              type="text"
-              name="businessName"
-              className={`w-full p-3 border ${
-                errors.businessName ? "border-red-500" : "border-gray-300"
-              } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200`}
-              placeholder="E.g. Acme Corp"
-              value={formData.businessName}
-              onChange={handleChange}
-            />
-            {errors.businessName && (
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-red-500 text-sm mt-1"
-              >
-                {errors.businessName}
-              </motion.p>
-            )}
-          </div>
-
-          <div>
-            <h2 className="text-lg font-semibold text-gray-700 mb-1">
-              What industry are you in?
-            </h2>
-            <select
-              name="industry"
-              className={`w-full p-3 border ${
-                errors.industry ? "border-red-500" : "border-gray-300"
-              } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200`}
-              value={formData.industry}
-              onChange={handleChange}
-            >
-              <option value="">Select your industry</option>
-              <option value="ecommerce">E-commerce</option>
-              <option value="saas">SaaS</option>
-              <option value="retail">Retail</option>
-              <option value="agency">Marketing Agency</option>
-              <option value="healthcare">Healthcare</option>
-              <option value="finance">Finance</option>
-              <option value="education">Education</option>
-            </select>
-            {errors.industry && (
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-red-500 text-sm mt-1"
-              >
-                {errors.industry}
-              </motion.p>
-            )}
-          </div>
-
-          <div>
-            <h2 className="text-lg font-semibold text-gray-700 mb-1">
-              Your primary marketing goal?
-            </h2>
-            <select
-              name="goal"
-              className={`w-full p-3 border ${
-                errors.goal ? "border-red-500" : "border-gray-300"
-              } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200`}
-              value={formData.goal}
-              onChange={handleChange}
-            >
-              <option value="">Select a goal</option>
-              <option value="leads">Generate more leads</option>
-              <option value="brand">Build brand awareness</option>
-              <option value="conversion">Improve conversion rates</option>
-              <option value="engagement">Increase engagement</option>
-              <option value="retention">Improve customer retention</option>
-              <option value="sales">Boost direct sales</option>
-            </select>
-            {errors.goal && (
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-red-500 text-sm mt-1"
-              >
-                {errors.goal}
-              </motion.p>
-            )}
-          </div>
-
-          <div>
-            <h2 className="text-lg font-semibold text-gray-700 mb-1">
-              Current marketing challenges?
-            </h2>
-            <textarea
-              name="challenges"
-              className={`w-full p-3 border ${
-                errors.challenges ? "border-red-500" : "border-gray-300"
-              } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px] transition-all duration-200`}
-              placeholder="E.g. Low social media engagement, poor ad performance..."
-              value={formData.challenges}
-              onChange={handleChange}
-            />
-            {errors.challenges && (
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-red-500 text-sm mt-1"
-              >
-                {errors.challenges}
-              </motion.p>
-            )}
-          </div>
-
-          <motion.button
-            type="submit"
-            disabled={isSubmitting}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-md transition-colors disabled:opacity-50 flex justify-center items-center"
+      <div className="max-w-6xl mx-auto px-6 py-16 md:py-24">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
           >
-            {isSubmitting ? (
-              <>
-                <LoadingDots />
-                <span className="ml-2">Processing...</span>
-              </>
-            ) : (
-              "Get Personalized Recommendations"
-            )}
-          </motion.button>
-        </form>
-      </motion.div>
-    </div>
-  );
-}
-
-
-/* File: ./frontend\src\app\components\LoadingDots.js */
-export default function LoadingDots() {
-  return (
-    <div className="flex space-x-1 items-center">
-      <span
-        className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"
-        style={{ animationDelay: "0ms" }}
-      ></span>
-      <span
-        className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"
-        style={{ animationDelay: "300ms" }}
-      ></span>
-      <span
-        className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"
-        style={{ animationDelay: "600ms" }}
-      ></span>
-    </div>
-  );
-}
-
-
-/* File: ./frontend\src\app\components\navbar.js */
-"use client";
-import React, { useState } from "react";
-import Link from "next/link";
-
-export default function Navbar({ active }) {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  return (
-    <header className="bg-white shadow-sm">
-      <div className="max-w-6xl mx-auto px-4">
-        <div className="flex justify-between items-center py-4">
-          {/* Logo */}
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-full"></div>
-            <Link href="/dashboard" className="font-bold text-lg">
-              MarketMind AI
-            </Link>
-          </div>
-
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex space-x-8">
-            <Link
-              href="/dashboard"
-              className={`${
-                active === "dashboard"
-                  ? "text-blue-600 font-medium"
-                  : "text-gray-600"
-              } hover:text-blue-600`}
-            >
-              Dashboard
-            </Link>
-            <Link
-              href="#"
-              className={`${
-                active === "campaigns"
-                  ? "text-blue-600 font-medium"
-                  : "text-gray-600"
-              } hover:text-blue-600`}
-            >
-              Campaigns
-            </Link>
-            <Link
-              href="#"
-              className={`${
-                active === "analytics"
-                  ? "text-blue-600 font-medium"
-                  : "text-gray-600"
-              } hover:text-blue-600`}
-            >
-              Analytics
-            </Link>
-            <Link
-              href="#"
-              className={`${
-                active === "settings"
-                  ? "text-blue-600 font-medium"
-                  : "text-gray-600"
-              } hover:text-blue-600`}
-            >
-              Settings
-            </Link>
-          </nav>
-
-          {/* Mobile menu button */}
-          <div className="md:hidden">
-            <button
-              type="button"
-              className="text-gray-500 hover:text-gray-600"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            >
-              <svg
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-6">
+              Transform Your Marketing with{" "}
+              <span className="text-indigo-600">AI</span>
+            </h1>
+            <p className="text-lg text-gray-600 mb-8">
+              MarketMind AI helps you create data-driven marketing strategies,
+              optimize campaigns, and increase your ROI with the power of
+              artificial intelligence.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => router.push("/onboarding")}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200"
               >
-                {mobileMenuOpen ? (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                ) : (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                )}
-              </svg>
-            </button>
-          </div>
-        </div>
-      </div>
+                Get Started
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => router.push("/chat")}
+                className="bg-white hover:bg-gray-100 text-indigo-600 border border-indigo-200 font-medium py-3 px-6 rounded-lg transition-all duration-200"
+              >
+                Try Demo
+              </motion.button>
+            </div>
+          </motion.div>
 
-      {/* Mobile Menu */}
-      {mobileMenuOpen && (
-        <div className="md:hidden">
-          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            <Link
-              href="/dashboard"
-              className={`${
-                active === "dashboard"
-                  ? "bg-blue-50 text-blue-600"
-                  : "text-gray-600"
-              } block px-3 py-2 rounded-md text-base font-medium`}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Dashboard
-            </Link>
-            <Link
-              href="#"
-              className={`${
-                active === "campaigns"
-                  ? "bg-blue-50 text-blue-600"
-                  : "text-gray-600"
-              } block px-3 py-2 rounded-md text-base font-medium`}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Campaigns
-            </Link>
-            <Link
-              href="#"
-              className={`${
-                active === "analytics"
-                  ? "bg-blue-50 text-blue-600"
-                  : "text-gray-600"
-              } block px-3 py-2 rounded-md text-base font-medium`}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Analytics
-            </Link>
-            <Link
-              href="#"
-              className={`${
-                active === "settings"
-                  ? "bg-blue-50 text-blue-600"
-                  : "text-gray-600"
-              } block px-3 py-2 rounded-md text-base font-medium`}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Settings
-            </Link>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="bg-white p-6 rounded-xl shadow-lg border border-gray-100"
+          >
+            <div className="aspect-video bg-indigo-50 rounded-lg flex items-center justify-center mb-6">
+              <svg
+                className="w-24 h-24 text-indigo-300"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="1.5"
+                  d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                ></path>
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-800 mb-3">
+              Key Features
+            </h3>
+            <ul className="space-y-3 text-gray-600">
+              <li className="flex items-start">
+                <svg
+                  className="w-5 h-5 text-indigo-500 mr-2 mt-0.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M5 13l4 4L19 7"
+                  ></path>
+                </svg>
+                <span>AI-powered marketing strategy recommendations</span>
+              </li>
+              <li className="flex items-start">
+                <svg
+                  className="w-5 h-5 text-indigo-500 mr-2 mt-0.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M5 13l4 4L19 7"
+                  ></path>
+                </svg>
+                <span>Personalized content creation assistance</span>
+              </li>
+              <li className="flex items-start">
+                <svg
+                  className="w-5 h-5 text-indigo-500 mr-2 mt-0.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M5 13l4 4L19 7"
+                  ></path>
+                </svg>
+                <span>Campaign optimization insights</span>
+              </li>
+              <li className="flex items-start">
+                <svg
+                  className="w-5 h-5 text-indigo-500 mr-2 mt-0.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M5 13l4 4L19 7"
+                  ></path>
+                </svg>
+                <span>24/7 marketing assistant</span>
+              </li>
+            </ul>
+          </motion.div>
         </div>
-      )}
-    </header>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="mt-24 text-center"
+        >
+          <h2 className="text-3xl font-bold text-gray-800 mb-12">
+            How MarketMind AI Works
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+              <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-xl font-bold">1</span>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-3">
+                Complete Onboarding
+              </h3>
+              <p className="text-gray-600">
+                Tell us about your business, industry, and marketing goals so we
+                can personalize your experience.
+              </p>
+            </div>
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+              <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-xl font-bold">2</span>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-3">
+                Get AI Recommendations
+              </h3>
+              <p className="text-gray-600">
+                Receive tailored marketing strategies and actionable insights
+                based on your specific needs.
+              </p>
+            </div>
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+              <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-xl font-bold">3</span>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-3">
+                Chat Anytime
+              </h3>
+              <p className="text-gray-600">
+                Ask questions, get advice, and refine your marketing strategy
+                with our AI assistant.
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </div>
   );
 }
 
 
-/* File: ./frontend\src\app\dashboard\page.js */
+/* File: ./frontend\src\app\about\page.js */
+"use client";
+import React from "react";
+import Navbar from "../components/navbar";
+import { motion } from "framer-motion";
+
+export default function AboutPage() {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      <div className="max-w-4xl mx-auto px-6 py-12">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="bg-white p-8 rounded-xl shadow-sm border border-gray-100"
+        >
+          <h1 className="text-3xl font-bold text-gray-800 mb-6">
+            About MarketMind AI
+          </h1>
+
+          <div className="prose prose-indigo max-w-none">
+            <p className="text-lg text-gray-600 mb-6">
+              MarketMind AI is an advanced marketing assistant powered by
+              artificial intelligence, designed to help businesses of all sizes
+              optimize their marketing strategies and achieve better results.
+            </p>
+
+            <h2 className="text-xl font-semibold text-gray-800 mt-8 mb-4">
+              Our Mission
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Our mission is to democratize access to sophisticated marketing
+              expertise through AI, enabling businesses to make data-driven
+              decisions and implement effective marketing strategies without the
+              need for expensive consultants or large marketing teams.
+            </p>
+
+            <h2 className="text-xl font-semibold text-gray-800 mt-8 mb-4">
+              How We Help
+            </h2>
+            <ul className="space-y-3 text-gray-600 mb-6">
+              <li className="flex items-start">
+                <svg
+                  className="w-5 h-5 text-indigo-500 mr-2 mt-0.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M5 13l4 4L19 7"
+                  ></path>
+                </svg>
+                <span>
+                  <strong>Strategic Guidance:</strong> Get personalized
+                  marketing strategies based on your business goals and
+                  industry.
+                </span>
+              </li>
+              <li className="flex items-start">
+                <svg
+                  className="w-5 h-5 text-indigo-500 mr-2 mt-0.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M5 13l4 4L19 7"
+                  ></path>
+                </svg>
+                <span>
+                  <strong>Content Creation:</strong> Generate ideas and outlines
+                  for marketing content that resonates with your audience.
+                </span>
+              </li>
+              <li className="flex items-start">
+                <svg
+                  className="w-5 h-5 text-indigo-500 mr-2 mt-0.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M5 13l4 4L19 7"
+                  ></path>
+                </svg>
+                <span>
+                  <strong>Campaign Optimization:</strong> Analyze your existing
+                  campaigns and suggest improvements for better performance.
+                </span>
+              </li>
+              <li className="flex items-start">
+                <svg
+                  className="w-5 h-5 text-indigo-500 mr-2 mt-0.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M5 13l4 4L19 7"
+                  ></path>
+                </svg>
+                <span>
+                  <strong>Market Research:</strong> Stay informed about industry
+                  trends and competitor strategies.
+                </span>
+              </li>
+            </ul>
+
+            <h2 className="text-xl font-semibold text-gray-800 mt-8 mb-4">
+              Our Technology
+            </h2>
+            <p className="text-gray-600 mb-6">
+              MarketMind AI is built on state-of-the-art large language models
+              and machine learning algorithms, trained on vast amounts of
+              marketing data and best practices. Our system continuously learns
+              and improves to provide you with the most relevant and effective
+              marketing advice.
+            </p>
+
+            <h2 className="text-xl font-semibold text-gray-800 mt-8 mb-4">
+              Get Started Today
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Ready to transform your marketing strategy? Complete our simple
+              onboarding process to get personalized recommendations tailored to
+              your business needs.
+            </p>
+
+            <div className="mt-8">
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => (window.location.href = "/onboarding")}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200"
+              >
+                Start Your Journey
+              </motion.button>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
+
+/* File: ./frontend\src\app\chat\page.js */
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import Navbar from "../components/navbar";
@@ -917,8 +873,7 @@ import LoadingDots from "../components/LoadingDots";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../hooks/useAuth";
 
-// This is the AI chat
-export default function Dashboard() {
+export default function ChatPage() {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -1009,30 +964,29 @@ export default function Dashboard() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <LoadingDots />
-          <p className="mt-4 text-gray-600">Loading your dashboard...</p>
+          <p className="mt-4 text-gray-600">Loading your chat...</p>
         </div>
       </div>
     );
   }
 
   if (!isAuthenticated && !authLoading) {
-    // Redirect to login or show unauthorized message
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center p-8 bg-white rounded-lg shadow-md max-w-md">
-          <h2 className="text-2xl font-bold text-red-600 mb-4">
+        <div className="text-center p-8 bg-white rounded-xl shadow-sm border border-gray-100 max-w-md">
+          <h2 className="text-2xl font-semibold text-red-600 mb-4">
             Access Denied
           </h2>
           <p className="text-gray-600 mb-6">
             You need to be logged in to access this page.
           </p>
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => (window.location.href = "/")}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => (window.location.href = "/onboarding")}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-5 rounded-lg transition-all duration-200"
           >
-            Go to Login
+            Go to Onboarding
           </motion.button>
         </div>
       </div>
@@ -1041,45 +995,66 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar active="dashboard" />
-      <div className="max-w-4xl mx-auto pt-8 px-4">
+      <Navbar />
+      <div className="max-w-4xl mx-auto pt-10 px-6">
         <motion.h1
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-2xl font-bold text-gray-800 mb-6"
+          className="text-2xl font-semibold text-gray-800 mb-6"
         >
-          Dashboard
+          Marketing Assistant
         </motion.h1>
 
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="bg-white p-6 rounded-lg shadow-sm mb-6 space-y-4 max-h-[70vh] overflow-y-auto"
+          className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6 max-h-[70vh] overflow-y-auto"
           ref={chatContainerRef}
         >
           {messages.length === 0 && !isLoading ? (
-            <div className="text-center py-8 text-gray-500">
-              Start a conversation with your marketing assistant
+            <div className="text-center py-12 text-gray-500">
+              <svg
+                className="w-12 h-12 mx-auto mb-4 text-gray-300"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="1.5"
+                  d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+                ></path>
+              </svg>
+              <p className="text-gray-500">
+                Start a conversation with your marketing assistant
+              </p>
             </div>
           ) : (
             <AnimatePresence>
               {messages.map((msg, index) => (
                 <motion.div
                   key={index}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.3 }}
                   className={`flex ${
                     msg.isUser ? "justify-end" : "justify-start"
-                  }`}
+                  } mb-4`}
                 >
                   <div
                     className={`max-w-3xl p-4 rounded-lg ${
                       msg.isUser
-                        ? "bg-blue-600 text-white shadow-blue-200 shadow-md"
-                        : "bg-white border border-gray-100 text-gray-800 shadow-sm prose prose-sm sm:prose lg:prose-lg xl:prose-xl"
+                        ? "bg-indigo-600 text-white"
+                        : "bg-gray-50 border border-gray-100 text-gray-800"
                     }`}
+                    style={{
+                      boxShadow: msg.isUser
+                        ? "0 2px 5px rgba(79, 70, 229, 0.1)"
+                        : "0 1px 3px rgba(0, 0, 0, 0.05)",
+                    }}
                   >
                     {msg.isUser ? (
                       <div className="whitespace-pre-wrap">{msg.text}</div>
@@ -1088,26 +1063,50 @@ export default function Dashboard() {
                         remarkPlugins={[remarkGfm]}
                         components={{
                           p: ({ node, ...props }) => (
-                            <p className="my-4" {...props} />
+                            <p className="my-3" {...props} />
                           ),
                           ul: ({ node, ...props }) => (
-                            <ul className="list-disc pl-6 my-4" {...props} />
+                            <ul className="list-disc pl-5 my-3" {...props} />
                           ),
                           ol: ({ node, ...props }) => (
-                            <ol className="list-decimal pl-6 my-4" {...props} />
+                            <ol className="list-decimal pl-5 my-3" {...props} />
                           ),
                           li: ({ node, ...props }) => (
-                            <li className="my-2" {...props} />
+                            <li className="my-1" {...props} />
                           ),
-                          code: ({ node, ...props }) => (
-                            <code
-                              className="bg-gray-200 rounded px-1 py-0.5 text-sm"
+                          h1: ({ node, ...props }) => (
+                            <h1
+                              className="text-xl font-semibold my-4"
                               {...props}
                             />
                           ),
+                          h2: ({ node, ...props }) => (
+                            <h2
+                              className="text-lg font-semibold my-3"
+                              {...props}
+                            />
+                          ),
+                          h3: ({ node, ...props }) => (
+                            <h3
+                              className="text-md font-semibold my-2"
+                              {...props}
+                            />
+                          ),
+                          code: ({ node, inline, ...props }) =>
+                            inline ? (
+                              <code
+                                className="bg-gray-200 rounded px-1 py-0.5 text-sm font-mono"
+                                {...props}
+                              />
+                            ) : (
+                              <code
+                                className="block bg-gray-200 rounded p-1 text-sm font-mono"
+                                {...props}
+                              />
+                            ),
                           pre: ({ node, ...props }) => (
                             <pre
-                              className="bg-gray-100 p-4 rounded overflow-x-auto my-4"
+                              className="bg-gray-100 p-3 rounded overflow-x-auto my-3 font-mono text-sm"
                               {...props}
                             />
                           ),
@@ -1127,7 +1126,7 @@ export default function Dashboard() {
               animate={{ opacity: 1 }}
               className="flex justify-start"
             >
-              <div className="max-w-3xl p-4 rounded-lg bg-white border border-gray-100 shadow-sm">
+              <div className="max-w-3xl p-4 rounded-lg bg-gray-50 border border-gray-100">
                 <LoadingDots />
               </div>
             </motion.div>
@@ -1136,14 +1135,14 @@ export default function Dashboard() {
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="mt-6 flex space-x-4"
+          className="mt-6 flex space-x-3"
         >
           <input
             type="text"
-            className="flex-1 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
+            className="flex-1 p-3.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
             placeholder="Type your marketing question..."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
@@ -1151,9 +1150,9 @@ export default function Dashboard() {
             disabled={isLoading}
           />
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md transition-colors disabled:opacity-50 flex items-center"
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3.5 rounded-lg transition-all duration-200 disabled:opacity-50 flex items-center"
             onClick={handleSendMessage}
             disabled={isLoading || !message.trim()}
           >
@@ -1163,12 +1162,142 @@ export default function Dashboard() {
                 <span className="ml-2">Sending...</span>
               </>
             ) : (
-              "Send"
+              <span>Send</span>
             )}
           </motion.button>
         </motion.div>
       </div>
     </div>
+  );
+}
+
+
+/* File: ./frontend\src\app\components\LoadingDots.js */
+export default function LoadingDots() {
+  return (
+    <div className="flex space-x-1.5 items-center">
+      <span
+        className="w-2 h-2 bg-indigo-300 rounded-full animate-pulse"
+        style={{ animationDelay: "0ms" }}
+      ></span>
+      <span
+        className="w-2 h-2 bg-indigo-400 rounded-full animate-pulse"
+        style={{ animationDelay: "300ms" }}
+      ></span>
+      <span
+        className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"
+        style={{ animationDelay: "600ms" }}
+      ></span>
+    </div>
+  );
+}
+
+
+/* File: ./frontend\src\app\components\navbar.js */
+"use client";
+import React, { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { motion } from "framer-motion";
+
+export default function Navbar() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
+
+  const navItems = [
+    { id: "home", label: "Home", href: "/" },
+    { id: "onboarding", label: "Onboarding", href: "/onboarding" },
+    { id: "chat", label: "Chat", href: "/chat" },
+    { id: "about", label: "About", href: "/about" },
+  ];
+
+  const isActive = (path) => pathname === path;
+
+  return (
+    <header className="bg-white border-b border-gray-100">
+      <div className="max-w-6xl mx-auto px-6">
+        <div className="flex justify-between items-center py-5">
+          {/* Logo */}
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-indigo-500 rounded-full opacity-90"></div>
+            <Link href="/" className="font-medium text-lg text-gray-800">
+              MarketMind AI
+            </Link>
+          </div>
+
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex space-x-10">
+            {navItems.map((item) => (
+              <Link
+                key={item.id}
+                href={item.href}
+                className={`${
+                  isActive(item.href)
+                    ? "text-indigo-600 font-medium"
+                    : "text-gray-600"
+                } hover:text-indigo-600 transition-colors duration-200`}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+
+          {/* Mobile menu button */}
+          <div className="md:hidden">
+            <button
+              type="button"
+              className="text-gray-500 hover:text-gray-600 focus:outline-none"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              <svg
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                {mobileMenuOpen ? (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                ) : (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                )}
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t border-gray-100">
+          <div className="px-4 py-2 space-y-1">
+            {navItems.map((item) => (
+              <Link
+                key={item.id}
+                href={item.href}
+                className={`${
+                  isActive(item.href)
+                    ? "bg-indigo-50 text-indigo-600"
+                    : "text-gray-600"
+                } block px-3 py-2.5 rounded-md text-base font-medium transition-colors duration-200`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+    </header>
   );
 }
 
@@ -1225,5 +1354,280 @@ export function useAuth() {
   }, []);
 
   return authState;
+}
+
+
+/* File: ./frontend\src\app\onboarding\page.js */
+"use client";
+import React, { useState } from "react";
+import Navbar from "../components/navbar";
+import { useRouter } from "next/navigation";
+import { DOMAIN } from "../config";
+import toast from "react-hot-toast";
+import LoadingDots from "../components/LoadingDots";
+import { motion } from "framer-motion";
+
+export default function Onboarding() {
+  const router = useRouter();
+  const [formData, setFormData] = useState({
+    businessName: "",
+    industry: "",
+    goal: "",
+    challenges: "",
+  });
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.businessName.trim()) {
+      newErrors.businessName = "Business name is required";
+    }
+
+    if (!formData.industry) {
+      newErrors.industry = "Please select an industry";
+    }
+
+    if (!formData.goal) {
+      newErrors.goal = "Please select a goal";
+    }
+
+    if (!formData.challenges.trim()) {
+      newErrors.challenges = "Please describe your challenges";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    // Clear error when field is edited
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: null }));
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
+      toast.error("Please fix the form errors");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Show loading toast
+      const loadingToast = toast.loading("Setting up your account...");
+
+      // Generate user ID
+      const userIdRes = await fetch(`${DOMAIN}/api/auth/generate-user-id`, {
+        credentials: "include",
+      });
+
+      if (!userIdRes.ok) {
+        const error = await userIdRes.json();
+        throw new Error(error.details || "Failed to generate user ID");
+      }
+
+      // Send onboarding data
+      const aiRes = await fetch(
+        `${DOMAIN}/api/chat/generateInitialRecommendations`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(formData),
+        }
+      );
+
+      if (!aiRes.ok) {
+        const error = await aiRes.json();
+        throw new Error(error.details || "Failed to get AI response");
+      }
+
+      // Dismiss loading toast and show success
+      toast.dismiss(loadingToast);
+      toast.success("Account setup complete!");
+
+      // Redirect to chat
+      router.push("/chat");
+    } catch (error) {
+      console.error("Onboarding error:", error);
+      toast.error(error.message || "An error occurred during onboarding");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      <div className="max-w-xl mx-auto px-6 py-12">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="bg-white p-8 rounded-xl shadow-sm border border-gray-100"
+        >
+          <h1 className="text-2xl font-semibold text-gray-800 mb-2">
+            Welcome to MarketMind AI
+          </h1>
+          <p className="text-gray-600 mb-8">
+            Let's personalize your marketing assistant
+          </p>
+
+          <form className="space-y-7" onSubmit={handleSubmit}>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                What's your business name?
+              </label>
+              <input
+                type="text"
+                name="businessName"
+                className={`w-full p-3.5 bg-gray-50 border ${
+                  errors.businessName ? "border-red-300" : "border-gray-200"
+                } rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200`}
+                placeholder="E.g. Acme Corp"
+                value={formData.businessName}
+                onChange={handleChange}
+              />
+              {errors.businessName && (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-red-500 text-sm mt-1.5"
+                >
+                  {errors.businessName}
+                </motion.p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                What industry are you in?
+              </label>
+              <select
+                name="industry"
+                className={`w-full p-3.5 bg-gray-50 border ${
+                  errors.industry ? "border-red-300" : "border-gray-200"
+                } rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 appearance-none`}
+                value={formData.industry}
+                onChange={handleChange}
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+                  backgroundPosition: `right 0.5rem center`,
+                  backgroundRepeat: `no-repeat`,
+                  backgroundSize: `1.5em 1.5em`,
+                  paddingRight: `2.5rem`,
+                }}
+              >
+                <option value="">Select your industry</option>
+                <option value="ecommerce">E-commerce</option>
+                <option value="saas">SaaS</option>
+                <option value="retail">Retail</option>
+                <option value="agency">Marketing Agency</option>
+                <option value="healthcare">Healthcare</option>
+                <option value="finance">Finance</option>
+                <option value="education">Education</option>
+              </select>
+              {errors.industry && (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-red-500 text-sm mt-1.5"
+                >
+                  {errors.industry}
+                </motion.p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Your primary marketing goal?
+              </label>
+              <select
+                name="goal"
+                className={`w-full p-3.5 bg-gray-50 border ${
+                  errors.goal ? "border-red-300" : "border-gray-200"
+                } rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 appearance-none`}
+                value={formData.goal}
+                onChange={handleChange}
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+                  backgroundPosition: `right 0.5rem center`,
+                  backgroundRepeat: `no-repeat`,
+                  backgroundSize: `1.5em 1.5em`,
+                  paddingRight: `2.5rem`,
+                }}
+              >
+                <option value="">Select a goal</option>
+                <option value="leads">Generate more leads</option>
+                <option value="brand">Build brand awareness</option>
+                <option value="conversion">Improve conversion rates</option>
+                <option value="engagement">Increase engagement</option>
+                <option value="retention">Improve customer retention</option>
+                <option value="sales">Boost direct sales</option>
+              </select>
+              {errors.goal && (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-red-500 text-sm mt-1.5"
+                >
+                  {errors.goal}
+                </motion.p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Current marketing challenges?
+              </label>
+              <textarea
+                name="challenges"
+                className={`w-full p-3.5 bg-gray-50 border ${
+                  errors.challenges ? "border-red-300" : "border-gray-200"
+                } rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent min-h-[120px] transition-all duration-200`}
+                placeholder="E.g. Low social media engagement, poor ad performance..."
+                value={formData.challenges}
+                onChange={handleChange}
+              />
+              {errors.challenges && (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-red-500 text-sm mt-1.5"
+                >
+                  {errors.challenges}
+                </motion.p>
+              )}
+            </div>
+
+            <motion.button
+              type="submit"
+              disabled={isSubmitting}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3.5 px-4 rounded-lg transition-all duration-200 disabled:opacity-50 flex justify-center items-center"
+            >
+              {isSubmitting ? (
+                <>
+                  <LoadingDots />
+                  <span className="ml-2">Processing...</span>
+                </>
+              ) : (
+                "Get Personalized Recommendations"
+              )}
+            </motion.button>
+          </form>
+        </motion.div>
+      </div>
+    </div>
+  );
 }
 

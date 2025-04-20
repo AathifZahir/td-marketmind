@@ -1,9 +1,21 @@
 "use client";
 import React, { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { motion } from "framer-motion";
 
-export default function Navbar({ active }) {
+export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
+
+  const navItems = [
+    { id: "home", label: "Home", href: "/" },
+    { id: "onboarding", label: "Onboarding", href: "/onboarding" },
+    { id: "chat", label: "Chat", href: "/chat" },
+    { id: "about", label: "About", href: "/about" },
+  ];
+
+  const isActive = (path) => pathname === path;
 
   return (
     <header className="bg-white border-b border-gray-100">
@@ -12,56 +24,26 @@ export default function Navbar({ active }) {
           {/* Logo */}
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-indigo-500 rounded-full opacity-90"></div>
-            <Link
-              href="/dashboard"
-              className="font-medium text-lg text-gray-800"
-            >
+            <Link href="/" className="font-medium text-lg text-gray-800">
               MarketMind AI
             </Link>
           </div>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-10">
-            <Link
-              href="/dashboard"
-              className={`${
-                active === "dashboard"
-                  ? "text-indigo-600 font-medium"
-                  : "text-gray-600"
-              } hover:text-indigo-600 transition-colors duration-200`}
-            >
-              Dashboard
-            </Link>
-            <Link
-              href="#"
-              className={`${
-                active === "campaigns"
-                  ? "text-indigo-600 font-medium"
-                  : "text-gray-600"
-              } hover:text-indigo-600 transition-colors duration-200`}
-            >
-              Campaigns
-            </Link>
-            <Link
-              href="#"
-              className={`${
-                active === "analytics"
-                  ? "text-indigo-600 font-medium"
-                  : "text-gray-600"
-              } hover:text-indigo-600 transition-colors duration-200`}
-            >
-              Analytics
-            </Link>
-            <Link
-              href="#"
-              className={`${
-                active === "settings"
-                  ? "text-indigo-600 font-medium"
-                  : "text-gray-600"
-              } hover:text-indigo-600 transition-colors duration-200`}
-            >
-              Settings
-            </Link>
+            {navItems.map((item) => (
+              <Link
+                key={item.id}
+                href={item.href}
+                className={`${
+                  isActive(item.href)
+                    ? "text-indigo-600 font-medium"
+                    : "text-gray-600"
+                } hover:text-indigo-600 transition-colors duration-200`}
+              >
+                {item.label}
+              </Link>
+            ))}
           </nav>
 
           {/* Mobile menu button */}
@@ -102,50 +84,20 @@ export default function Navbar({ active }) {
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-gray-100">
           <div className="px-4 py-2 space-y-1">
-            <Link
-              href="/dashboard"
-              className={`${
-                active === "dashboard"
-                  ? "bg-indigo-50 text-indigo-600"
-                  : "text-gray-600"
-              } block px-3 py-2.5 rounded-md text-base font-medium transition-colors duration-200`}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Dashboard
-            </Link>
-            <Link
-              href="#"
-              className={`${
-                active === "campaigns"
-                  ? "bg-indigo-50 text-indigo-600"
-                  : "text-gray-600"
-              } block px-3 py-2.5 rounded-md text-base font-medium transition-colors duration-200`}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Campaigns
-            </Link>
-            <Link
-              href="#"
-              className={`${
-                active === "analytics"
-                  ? "bg-indigo-50 text-indigo-600"
-                  : "text-gray-600"
-              } block px-3 py-2.5 rounded-md text-base font-medium transition-colors duration-200`}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Analytics
-            </Link>
-            <Link
-              href="#"
-              className={`${
-                active === "settings"
-                  ? "bg-indigo-50 text-indigo-600"
-                  : "text-gray-600"
-              } block px-3 py-2.5 rounded-md text-base font-medium transition-colors duration-200`}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Settings
-            </Link>
+            {navItems.map((item) => (
+              <Link
+                key={item.id}
+                href={item.href}
+                className={`${
+                  isActive(item.href)
+                    ? "bg-indigo-50 text-indigo-600"
+                    : "text-gray-600"
+                } block px-3 py-2.5 rounded-md text-base font-medium transition-colors duration-200`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {item.label}
+              </Link>
+            ))}
           </div>
         </div>
       )}
