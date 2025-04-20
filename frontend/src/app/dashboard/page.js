@@ -9,7 +9,6 @@ import LoadingDots from "../components/LoadingDots";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../hooks/useAuth";
 
-// This is the AI chat
 export default function Dashboard() {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
@@ -108,21 +107,20 @@ export default function Dashboard() {
   }
 
   if (!isAuthenticated && !authLoading) {
-    // Redirect to login or show unauthorized message
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center p-8 bg-white rounded-lg shadow-md max-w-md">
-          <h2 className="text-2xl font-bold text-red-600 mb-4">
+        <div className="text-center p-8 bg-white rounded-xl shadow-sm border border-gray-100 max-w-md">
+          <h2 className="text-2xl font-semibold text-red-600 mb-4">
             Access Denied
           </h2>
           <p className="text-gray-600 mb-6">
             You need to be logged in to access this page.
           </p>
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
             onClick={() => (window.location.href = "/")}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-5 rounded-lg transition-all duration-200"
           >
             Go to Login
           </motion.button>
@@ -134,44 +132,65 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar active="dashboard" />
-      <div className="max-w-4xl mx-auto pt-8 px-4">
+      <div className="max-w-4xl mx-auto pt-10 px-6">
         <motion.h1
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-2xl font-bold text-gray-800 mb-6"
+          className="text-2xl font-semibold text-gray-800 mb-6"
         >
-          Dashboard
+          Marketing Assistant
         </motion.h1>
 
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="bg-white p-6 rounded-lg shadow-sm mb-6 space-y-4 max-h-[70vh] overflow-y-auto"
+          className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6 max-h-[70vh] overflow-y-auto"
           ref={chatContainerRef}
         >
           {messages.length === 0 && !isLoading ? (
-            <div className="text-center py-8 text-gray-500">
-              Start a conversation with your marketing assistant
+            <div className="text-center py-12 text-gray-500">
+              <svg
+                className="w-12 h-12 mx-auto mb-4 text-gray-300"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="1.5"
+                  d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+                ></path>
+              </svg>
+              <p className="text-gray-500">
+                Start a conversation with your marketing assistant
+              </p>
             </div>
           ) : (
             <AnimatePresence>
               {messages.map((msg, index) => (
                 <motion.div
                   key={index}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.3 }}
                   className={`flex ${
                     msg.isUser ? "justify-end" : "justify-start"
-                  }`}
+                  } mb-4`}
                 >
                   <div
                     className={`max-w-3xl p-4 rounded-lg ${
                       msg.isUser
-                        ? "bg-blue-600 text-white shadow-blue-200 shadow-md"
-                        : "bg-white border border-gray-100 text-gray-800 shadow-sm prose prose-sm sm:prose lg:prose-lg xl:prose-xl"
+                        ? "bg-indigo-600 text-white"
+                        : "bg-gray-50 border border-gray-100 text-gray-800"
                     }`}
+                    style={{
+                      boxShadow: msg.isUser
+                        ? "0 2px 5px rgba(79, 70, 229, 0.1)"
+                        : "0 1px 3px rgba(0, 0, 0, 0.05)",
+                    }}
                   >
                     {msg.isUser ? (
                       <div className="whitespace-pre-wrap">{msg.text}</div>
@@ -180,26 +199,50 @@ export default function Dashboard() {
                         remarkPlugins={[remarkGfm]}
                         components={{
                           p: ({ node, ...props }) => (
-                            <p className="my-4" {...props} />
+                            <p className="my-3" {...props} />
                           ),
                           ul: ({ node, ...props }) => (
-                            <ul className="list-disc pl-6 my-4" {...props} />
+                            <ul className="list-disc pl-5 my-3" {...props} />
                           ),
                           ol: ({ node, ...props }) => (
-                            <ol className="list-decimal pl-6 my-4" {...props} />
+                            <ol className="list-decimal pl-5 my-3" {...props} />
                           ),
                           li: ({ node, ...props }) => (
-                            <li className="my-2" {...props} />
+                            <li className="my-1" {...props} />
                           ),
-                          code: ({ node, ...props }) => (
-                            <code
-                              className="bg-gray-200 rounded px-1 py-0.5 text-sm"
+                          h1: ({ node, ...props }) => (
+                            <h1
+                              className="text-xl font-semibold my-4"
                               {...props}
                             />
                           ),
+                          h2: ({ node, ...props }) => (
+                            <h2
+                              className="text-lg font-semibold my-3"
+                              {...props}
+                            />
+                          ),
+                          h3: ({ node, ...props }) => (
+                            <h3
+                              className="text-md font-semibold my-2"
+                              {...props}
+                            />
+                          ),
+                          code: ({ node, inline, ...props }) =>
+                            inline ? (
+                              <code
+                                className="bg-gray-200 rounded px-1 py-0.5 text-sm font-mono"
+                                {...props}
+                              />
+                            ) : (
+                              <code
+                                className="block bg-gray-200 rounded p-1 text-sm font-mono"
+                                {...props}
+                              />
+                            ),
                           pre: ({ node, ...props }) => (
                             <pre
-                              className="bg-gray-100 p-4 rounded overflow-x-auto my-4"
+                              className="bg-gray-100 p-3 rounded overflow-x-auto my-3 font-mono text-sm"
                               {...props}
                             />
                           ),
@@ -219,7 +262,7 @@ export default function Dashboard() {
               animate={{ opacity: 1 }}
               className="flex justify-start"
             >
-              <div className="max-w-3xl p-4 rounded-lg bg-white border border-gray-100 shadow-sm">
+              <div className="max-w-3xl p-4 rounded-lg bg-gray-50 border border-gray-100">
                 <LoadingDots />
               </div>
             </motion.div>
@@ -228,14 +271,14 @@ export default function Dashboard() {
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="mt-6 flex space-x-4"
+          className="mt-6 flex space-x-3"
         >
           <input
             type="text"
-            className="flex-1 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
+            className="flex-1 p-3.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
             placeholder="Type your marketing question..."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
@@ -243,9 +286,9 @@ export default function Dashboard() {
             disabled={isLoading}
           />
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md transition-colors disabled:opacity-50 flex items-center"
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3.5 rounded-lg transition-all duration-200 disabled:opacity-50 flex items-center"
             onClick={handleSendMessage}
             disabled={isLoading || !message.trim()}
           >
@@ -255,7 +298,7 @@ export default function Dashboard() {
                 <span className="ml-2">Sending...</span>
               </>
             ) : (
-              "Send"
+              <span>Send</span>
             )}
           </motion.button>
         </motion.div>

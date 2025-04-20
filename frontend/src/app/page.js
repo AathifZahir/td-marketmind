@@ -108,150 +108,166 @@ export default function Onboarding() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md mt-10"
-      >
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">
-          Welcome to MarketMind AI
-        </h1>
-        <p className="text-gray-600 mb-6">
-          Let's personalize your marketing assistant
-        </p>
+      <div className="max-w-xl mx-auto px-6 py-12">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="bg-white p-8 rounded-xl shadow-sm border border-gray-100"
+        >
+          <h1 className="text-2xl font-semibold text-gray-800 mb-2">
+            Welcome to MarketMind AI
+          </h1>
+          <p className="text-gray-600 mb-8">
+            Let's personalize your marketing assistant
+          </p>
 
-        <form className="space-y-6" onSubmit={handleSubmit}>
-          <div>
-            <h2 className="text-lg font-semibold text-gray-700 mb-1">
-              What's your business name?
-            </h2>
-            <input
-              type="text"
-              name="businessName"
-              className={`w-full p-3 border ${
-                errors.businessName ? "border-red-500" : "border-gray-300"
-              } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200`}
-              placeholder="E.g. Acme Corp"
-              value={formData.businessName}
-              onChange={handleChange}
-            />
-            {errors.businessName && (
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-red-500 text-sm mt-1"
+          <form className="space-y-7" onSubmit={handleSubmit}>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                What's your business name?
+              </label>
+              <input
+                type="text"
+                name="businessName"
+                className={`w-full p-3.5 bg-gray-50 border ${
+                  errors.businessName ? "border-red-300" : "border-gray-200"
+                } rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200`}
+                placeholder="E.g. Acme Corp"
+                value={formData.businessName}
+                onChange={handleChange}
+              />
+              {errors.businessName && (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-red-500 text-sm mt-1.5"
+                >
+                  {errors.businessName}
+                </motion.p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                What industry are you in?
+              </label>
+              <select
+                name="industry"
+                className={`w-full p-3.5 bg-gray-50 border ${
+                  errors.industry ? "border-red-300" : "border-gray-200"
+                } rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 appearance-none`}
+                value={formData.industry}
+                onChange={handleChange}
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+                  backgroundPosition: `right 0.5rem center`,
+                  backgroundRepeat: `no-repeat`,
+                  backgroundSize: `1.5em 1.5em`,
+                  paddingRight: `2.5rem`,
+                }}
               >
-                {errors.businessName}
-              </motion.p>
-            )}
-          </div>
+                <option value="">Select your industry</option>
+                <option value="ecommerce">E-commerce</option>
+                <option value="saas">SaaS</option>
+                <option value="retail">Retail</option>
+                <option value="agency">Marketing Agency</option>
+                <option value="healthcare">Healthcare</option>
+                <option value="finance">Finance</option>
+                <option value="education">Education</option>
+              </select>
+              {errors.industry && (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-red-500 text-sm mt-1.5"
+                >
+                  {errors.industry}
+                </motion.p>
+              )}
+            </div>
 
-          <div>
-            <h2 className="text-lg font-semibold text-gray-700 mb-1">
-              What industry are you in?
-            </h2>
-            <select
-              name="industry"
-              className={`w-full p-3 border ${
-                errors.industry ? "border-red-500" : "border-gray-300"
-              } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200`}
-              value={formData.industry}
-              onChange={handleChange}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Your primary marketing goal?
+              </label>
+              <select
+                name="goal"
+                className={`w-full p-3.5 bg-gray-50 border ${
+                  errors.goal ? "border-red-300" : "border-gray-200"
+                } rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 appearance-none`}
+                value={formData.goal}
+                onChange={handleChange}
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+                  backgroundPosition: `right 0.5rem center`,
+                  backgroundRepeat: `no-repeat`,
+                  backgroundSize: `1.5em 1.5em`,
+                  paddingRight: `2.5rem`,
+                }}
+              >
+                <option value="">Select a goal</option>
+                <option value="leads">Generate more leads</option>
+                <option value="brand">Build brand awareness</option>
+                <option value="conversion">Improve conversion rates</option>
+                <option value="engagement">Increase engagement</option>
+                <option value="retention">Improve customer retention</option>
+                <option value="sales">Boost direct sales</option>
+              </select>
+              {errors.goal && (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-red-500 text-sm mt-1.5"
+                >
+                  {errors.goal}
+                </motion.p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Current marketing challenges?
+              </label>
+              <textarea
+                name="challenges"
+                className={`w-full p-3.5 bg-gray-50 border ${
+                  errors.challenges ? "border-red-300" : "border-gray-200"
+                } rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent min-h-[120px] transition-all duration-200`}
+                placeholder="E.g. Low social media engagement, poor ad performance..."
+                value={formData.challenges}
+                onChange={handleChange}
+              />
+              {errors.challenges && (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-red-500 text-sm mt-1.5"
+                >
+                  {errors.challenges}
+                </motion.p>
+              )}
+            </div>
+
+            <motion.button
+              type="submit"
+              disabled={isSubmitting}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3.5 px-4 rounded-lg transition-all duration-200 disabled:opacity-50 flex justify-center items-center"
             >
-              <option value="">Select your industry</option>
-              <option value="ecommerce">E-commerce</option>
-              <option value="saas">SaaS</option>
-              <option value="retail">Retail</option>
-              <option value="agency">Marketing Agency</option>
-              <option value="healthcare">Healthcare</option>
-              <option value="finance">Finance</option>
-              <option value="education">Education</option>
-            </select>
-            {errors.industry && (
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-red-500 text-sm mt-1"
-              >
-                {errors.industry}
-              </motion.p>
-            )}
-          </div>
-
-          <div>
-            <h2 className="text-lg font-semibold text-gray-700 mb-1">
-              Your primary marketing goal?
-            </h2>
-            <select
-              name="goal"
-              className={`w-full p-3 border ${
-                errors.goal ? "border-red-500" : "border-gray-300"
-              } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200`}
-              value={formData.goal}
-              onChange={handleChange}
-            >
-              <option value="">Select a goal</option>
-              <option value="leads">Generate more leads</option>
-              <option value="brand">Build brand awareness</option>
-              <option value="conversion">Improve conversion rates</option>
-              <option value="engagement">Increase engagement</option>
-              <option value="retention">Improve customer retention</option>
-              <option value="sales">Boost direct sales</option>
-            </select>
-            {errors.goal && (
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-red-500 text-sm mt-1"
-              >
-                {errors.goal}
-              </motion.p>
-            )}
-          </div>
-
-          <div>
-            <h2 className="text-lg font-semibold text-gray-700 mb-1">
-              Current marketing challenges?
-            </h2>
-            <textarea
-              name="challenges"
-              className={`w-full p-3 border ${
-                errors.challenges ? "border-red-500" : "border-gray-300"
-              } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px] transition-all duration-200`}
-              placeholder="E.g. Low social media engagement, poor ad performance..."
-              value={formData.challenges}
-              onChange={handleChange}
-            />
-            {errors.challenges && (
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-red-500 text-sm mt-1"
-              >
-                {errors.challenges}
-              </motion.p>
-            )}
-          </div>
-
-          <motion.button
-            type="submit"
-            disabled={isSubmitting}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-md transition-colors disabled:opacity-50 flex justify-center items-center"
-          >
-            {isSubmitting ? (
-              <>
-                <LoadingDots />
-                <span className="ml-2">Processing...</span>
-              </>
-            ) : (
-              "Get Personalized Recommendations"
-            )}
-          </motion.button>
-        </form>
-      </motion.div>
+              {isSubmitting ? (
+                <>
+                  <LoadingDots />
+                  <span className="ml-2">Processing...</span>
+                </>
+              ) : (
+                "Get Personalized Recommendations"
+              )}
+            </motion.button>
+          </form>
+        </motion.div>
+      </div>
     </div>
   );
 }
